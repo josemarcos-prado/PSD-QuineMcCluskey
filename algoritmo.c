@@ -1,6 +1,18 @@
 #include <stdio.h>
 #include <string.h>
 
+/*Funcao que busca dentro de um arquivo .pla pelo numero de entradas*/
+int buscaEntradas(FILE* tabela){
+    int entradas = 0;
+    while (1){
+        int scanValido = fscanf(tabela, ".i %d", &entradas);
+        if (scanValido == 1) break;
+        if (feof(tabela) || scanValido == EOF) break;
+        fgetc(tabela);
+    }
+    return entradas;
+}
+
 /*Funcao que implementea o algoritmo de Quine-McCluskey*/
 int QuiMc (FILE* tabela){
     if (!tabela){
@@ -9,18 +21,14 @@ int QuiMc (FILE* tabela){
     }
     printf("\nArquivo aberto e lido\n\n");
 
-    int in = 0;
-    while (1){
-        int scanValido = fscanf(tabela, ".i %d", &in);
-        if (scanValido == 1) break;
-        if (feof(tabela) || scanValido == EOF) break;
-        fgetc(tabela);
-    }
-    if (!in){
+    int in = buscaEntradas(tabela);
+    if (in) {
+        printf("\nNumero de entradas: %d\n\n", in);
+    } 
+    else {
         printf("\nNumero de entradas nao encontrado ou invalido\n\n");
         return 2;
     }
-    printf("\nNumero de entradas: %d\n\n", in);
     
     fclose(tabela);
     return 0;
