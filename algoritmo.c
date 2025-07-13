@@ -2,8 +2,8 @@
 #include <string.h>
 
 /*Funcao que implementea o algoritmo de Quine-McCluskey*/
-int QuiMc (FILE* tabelao){
-    if (!tabelao){
+int QuiMc (FILE* tabela){
+    if (!tabela){
         printf("\nNao foi possivel abrir este arquivo\n\n");
         return 1;
     }
@@ -11,10 +11,10 @@ int QuiMc (FILE* tabelao){
 
     int in = 0;
     while (1){
-        int scanValido = fscanf(tabelao, ".i %d", &in);
+        int scanValido = fscanf(tabela, ".i %d", &in);
         if (scanValido == 1) break;
-        if (feof(tabelao) || scanValido == EOF) break;
-        fgetc(tabelao);
+        if (feof(tabela) || scanValido == EOF) break;
+        fgetc(tabela);
     }
     if (!in){
         printf("\nNumero de entradas nao encontrado ou invalido\n\n");
@@ -22,7 +22,7 @@ int QuiMc (FILE* tabelao){
     }
     printf("\nNumero de entradas: %d\n\n", in);
     
-    fclose(tabelao);
+    fclose(tabela);
     return 0;
 }
 /*  Mapa de excecoes QuiMc:
