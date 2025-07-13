@@ -4,12 +4,13 @@
 /*Funcao que implementea o algoritmo de Quine-McCluskey*/
 int QuiMc (FILE* tabelao){
     if (!tabelao){
-        printf("Nao foi possivel abrir este arquivo\n");
+        printf("\nNao foi possivel abrir este arquivo\n\n");
         return 1;
     }
-
+    printf("\nArquivo aberto e lido\n\n");
     
     fclose(tabelao);
+    return 0;
 }
 /*  Mapa de excecoes QuiMc:
     Excecao 1: ponteiro NULL
@@ -27,13 +28,15 @@ int encontrouPla(const char* nome) {
 int main (int argc, char *argv[]) {
     if (argc > 1) {
         if (!encontrouPla(argv[1])){
-            printf("Formato inválido\n");
+            printf("\nFormato de arquivo invalido\n");
+            printf("\nUso: ./algoritmo [nomedoarquivo.pla]\n\n");
             return 2;
         }
         QuiMc(fopen(argv[1], "r"));
     }
     else {
-        printf("\nUso: ./algoritmo [nomedoarquivo.pla]");
+        printf("\nNumero de argumentos invalido\n");
+        printf("\nUso: ./algoritmo [nomedoarquivo.pla]\n\n");
         return 1;
     }
     return 0;
