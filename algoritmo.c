@@ -38,6 +38,7 @@ int encontrouPla(const char* nome) {
         return 0;
     }
 
+/*Funcao que faz I/O com o usuario*/
 int main (int argc, char *argv[]) {
     if (argc > 1) {
         if (!encontrouPla(argv[1])){
