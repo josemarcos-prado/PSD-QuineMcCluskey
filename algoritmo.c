@@ -43,14 +43,14 @@ int main (int argc, char *argv[]) {
     if (argc > 1) {
         if (!encontrouPla(argv[1])){
             printf("\nFormato de arquivo invalido\n");
-            printf("\nUso: ./algoritmo [nomedoarquivo.pla]\n\n");
+            printf("\nUso: ./algoritmo [nomedoarquivo].pla\n\n");
             return 2;
         }
         QuiMc(fopen(argv[1], "r"));
     }
     else {
         printf("\nNumero de argumentos invalido\n");
-        printf("\nUso: ./algoritmo [nomedoarquivo.pla]\n\n");
+        printf("\nUso: ./algoritmo [nomedoarquivo].pla\n\n");
         return 1;
     }
     return 0;
