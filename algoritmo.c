@@ -15,27 +15,18 @@ int buscaEntradas(FILE* tabela){
 
 /*Funcao que implementea o algoritmo de Quine-McCluskey*/
 int QuiMc (FILE* tabela){
-    if (!tabela){
-        printf("\nNao foi possivel abrir este arquivo\n\n");
+    int in = buscaEntradas(tabela);
+    if (!in) {
+        printf("\nNumero de entradas nao encontrado ou invalido\n\n");
         return 1;
     }
-    printf("\nArquivo aberto e lido\n\n");
-
-    int in = buscaEntradas(tabela);
-    if (in) {
-        printf("\nNumero de entradas: %d\n\n", in);
-    } 
-    else {
-        printf("\nNumero de entradas nao encontrado ou invalido\n\n");
-        return 2;
-    }
+    printf("\nNumero de entradas: %d\n\n", in); 
     
     fclose(tabela);
     return 0;
 }
 /*  Mapa de excecoes QuiMc:
-    Excecao 1: ponteiro NULL
-    Excecao 2: numero invalido de entradas no arquivo
+    Excecao 1: numero invalido de entradas no arquivo
 */
 
 /*Funcao checa se ha ".pla" no final do arquivo*/
@@ -54,7 +45,14 @@ int main (int argc, char *argv[]) {
             printf("\nUso: ./algoritmo [nomedoarquivo].pla\n\n");
             return 2;
         }
-        QuiMc(fopen(argv[1], "r"));
+        FILE *tabela = fopen(argv[1], "r");
+        if (!tabela){
+            printf("\nNao foi possivel abrir este arquivo\n\n");
+            return 3;
+        }
+        printf("\nArquivo aberto e lido\n\n");
+
+        QuiMc(tabela);
     }
     else {
         printf("\nNumero de argumentos invalido\n");
@@ -66,4 +64,5 @@ int main (int argc, char *argv[]) {
 /*  Mapa de excecoes main:
     Excecao 1: quantidade de argumentos inválida
     Excecao 2: formato inválido
+    Excecao 3: arquivo invalido (erro ao abrir)
 */
