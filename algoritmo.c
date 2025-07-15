@@ -124,7 +124,7 @@ int main (int argc, char *argv[]) {
     return 0;
 }
 /*  Mapa de excecoes main:
-    Excecao 1: quantidade de argumentos inválida
-    Excecao 2: formato inválido
+    Excecao 1: quantidade de argumentos invalida
+    Excecao 2: formato invalido
     Excecao 3: arquivo invalido (erro ao abrir)
 */
