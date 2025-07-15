@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 
+/*Funcao para facilitar a impressao de array de inteiros*/
 void imprimeArrayInt(int* array, int tamanho){
     printf("[");
     for (int i = 0; i < tamanho-1; i++) printf("%d, ", array[i]);
@@ -22,6 +23,7 @@ int buscaEntradas(FILE* tabela){
     return entradas;
 }
 
+/*Funcao que acha a quantidade de mintermos "1" na tabela-verdade*/
 int achaMintermos1(FILE* tabela, int entradas){
     rewind(tabela);
 
@@ -40,6 +42,7 @@ int achaMintermos1(FILE* tabela, int entradas){
     return quantidadeDeMinTermos1;
 }
 
+/*Funcao que armazena o valor dos mintermos "1" encontrados num array de inteiros*/
 void armazenaMintermos1(FILE* tabela, int entradas, int* mintermos1){
     rewind(tabela);
 
@@ -67,6 +70,10 @@ int QuiMc (FILE* tabela){
     printf("\nNumero de entradas: %d\n\n", entradas);
 
     int quantiaMintermos1 = achaMintermos1(tabela, entradas);
+    if (quantiaMintermos1 == 0) {
+        printf("\nTabela-verdade dada representa uma contradicao\n\n");
+        return 2;
+    }
     int mintermos1[quantiaMintermos1];
     armazenaMintermos1(tabela, entradas, mintermos1);
 
@@ -80,6 +87,7 @@ int QuiMc (FILE* tabela){
 }
 /*  Mapa de excecoes QuiMc:
     Excecao 1: numero invalido de entradas no arquivo
+    Excecao 2: tabela verdade representa uma contradicao (expressao logica = 0)
 */
 
 /*Funcao checa se ha ".pla" no final do arquivo*/
