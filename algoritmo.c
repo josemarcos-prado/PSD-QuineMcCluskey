@@ -60,6 +60,31 @@ void armazenaMintermos1(FILE* tabela, int entradas, int* mintermos1){
     }
 }
 
+/*Funcao que converte int em binario e armazena numa string*/
+int intToBin (int numero, int bits, char binario[bits+1], size_t tamanhoDoBinario) {
+    if (tamanhoDoBinario < bits+1) {
+        printf("\nString incapaz de armazenar o binario\n\n");
+        return 0;
+    }
+    if (numero > (pow(2, bits) - 1)) {
+        printf("\nErro de conversao para binario (bits insuficientes)\n\n");
+        return 0;
+    }
+
+    for (int i = 0, m = bits-1; m >= 0; m--, i++){
+        int pot = pow(2, m);
+        if ((numero - pot) >= 0){
+            binario[i] = '1';
+            numero -= pot;
+        }
+        else {
+            binario[i] = '0';
+        }
+    }
+    binario[bits] = '\0';
+    return 1;
+}
+
 /*Funcao que implementea o algoritmo de Quine-McCluskey*/
 int QuiMc (FILE* tabela){
     int entradas = buscaEntradas(tabela);
@@ -77,9 +102,14 @@ int QuiMc (FILE* tabela){
     int mintermos1[quantiaMintermos1];
     armazenaMintermos1(tabela, entradas, mintermos1);
 
+    char binMintermos1[quantiaMintermos1][entradas+1];
+    for (int i = 0; i < quantiaMintermos1; i++) intToBin(mintermos1[i], entradas, binMintermos1[i], sizeof(binMintermos1[i]));
+
     printf("\nQuantidade de mintermos 1: %d\n", quantiaMintermos1);
     printf("Mintermos 1: ");
     imprimeArrayInt(mintermos1, quantiaMintermos1);
+    printf("\nMintermos 1 em binario: ");
+    for (int i = 0; i < quantiaMintermos1; i++) printf("%s ", binMintermos1[i]);
     printf("\n\n");
     
     fclose(tabela);
