@@ -3,6 +3,87 @@
 #include <string.h>
 #include <math.h>
 
+/*Definição da struct Termo*/
+typedef struct {
+    char* binario;        
+    int numBits;          
+    int numUns;           
+    int* mintermosCobertos; /*Array de mintermos originais cobertos por este termo*/
+    int quantMintermosCobertos; 
+    int combinado;        /*Flag: 0 se nao combinado, 1 se foi combinado (marcado por uma combinação)*/
+} Termo;
+
+/*Função auxiliar: contaUns*/
+int contaUns(char* binario) {
+    int count = 0;
+    for (int i = 0; binario[i] != '\0'; i++) {
+        if (binario[i] == '1') {
+            count++;  
+        }
+    }
+    return count;
+}
+
+/*Função auxiliar: criaTermo*/
+Termo* criaTermo(char* binario, int numEntradas, int mintermoOriginal) {
+    Termo* novoTermo = (Termo*) malloc(sizeof(Termo));
+    if (!novoTermo) {
+        perror("Erro ao alocar Termo");
+        exit(EXIT_FAILURE); 
+    }
+    novoTermo->binario = strdup(binario); /*Copia a string*/
+    if (!novoTermo->binario) {
+        perror("Erro ao alocar binario para Termo");
+        free(novoTermo); /*Libera o Termo já alocado antes de sair*/
+        exit(EXIT_FAILURE);
+    }
+    novoTermo->numBits = numEntradas;
+    novoTermo->numUns = contaUns(binario); /*Calcula e atribui a quantidade de 1s na string binária usando a função auxiliar*/
+    novoTermo->mintermosCobertos = (int*) malloc(sizeof(int));
+    if (!novoTermo->mintermosCobertos) {
+        perror("Erro ao alocar mintermosCobertos");
+        free(novoTermo->binario); /*Libera o binario antes de sair*/
+        free(novoTermo);
+        exit(EXIT_FAILURE);
+    }
+    novoTermo->mintermosCobertos[0] = mintermoOriginal;
+    novoTermo->quantMintermosCobertos = 1;
+    novoTermo->combinado = 0; /*Inicialmente não combinado*/
+    return novoTermo;
+}
+
+/*Função auxiliar: liberaTermo*/
+void liberaTermo(Termo* termo) {
+    if (termo) {
+        free(termo->binario);
+        free(termo->mintermosCobertos);
+        free(termo);
+    }
+}
+
+/*Função auxiliar: diferemPorUmBit*/
+int diferemPorUmBit(Termo* t1, Termo* t2, int* posDiferente) {
+    if (t1->numBits != t2->numBits) return 0; /*Termos de tamanhos diferentes*/
+
+    int diferencas = 0;
+    *posDiferente = -1; /*Inicializa a posição diferente*/
+
+    for (int i = 0; i < t1->numBits; i++) {
+        /*Se ambos são '-' na mesma posição, não é uma diferença de bit para combinação*/
+        if (t1->binario[i] == '-' && t2->binario[i] == '-') continue;
+        /*Se um é '-' e o outro não, eles não podem ser combinados diretamente assim*/
+        if (t1->binario[i] == '-' || t2->binario[i] == '-') return 0;
+
+        if (t1->binario[i] != t2->binario[i]) {
+            diferencas++;
+            *posDiferente = i;
+        }
+    }
+    return (diferencas == 1); /*Verdadeiro se diferem em exatamente um bit*/
+}
+
+
+
 /*Funcao para facilitar a impressao de array de inteiros*/
 void imprimeArrayInt(int* array, int tamanho){
     printf("[");
