@@ -82,6 +82,48 @@ int diferemPorUmBit(Termo* t1, Termo* t2, int* posDiferente) {
     return (diferencas == 1); /*Verdadeiro se diferem em exatamente um bit*/
 }
 
+/*Função auxiliar: combinaTermos*/
+Termo* combinaTermos(Termo* t1, Termo* t2, int posDiferente) {
+    char* novoBinario = strdup(t1->binario);
+    if (!novoBinario) {
+        perror("Erro ao alocar novoBinario em combinaTermos");
+        exit(EXIT_FAILURE);
+    }
+    novoBinario[posDiferente] = '-'; /*Coloca o traço na posição diferente*/
+
+    /*Copia e une as listas de mintermos cobertos*/
+    /*Primeiro, aloca um array grande o suficiente para ambos*/
+    int novaQuantMintermos = t1->quantMintermosCobertos + t2->quantMintermosCobertos;
+    int* novosMintermos = (int*) malloc(novaQuantMintermos * sizeof(int));
+    if (!novosMintermos) {
+        perror("Erro ao alocar novosMintermos em combinaTermos");
+        free(novoBinario);
+        exit(EXIT_FAILURE);
+    }
+
+    /*Copia os mintermos de t1*/
+    memcpy(novosMintermos, t1->mintermosCobertos, t1->quantMintermosCobertos * sizeof(int));
+    /*Copia os mintermos de t2 para o restante do array*/
+    memcpy(novosMintermos + t1->quantMintermosCobertos, t2->mintermosCobertos, t2->quantMintermosCobertos * sizeof(int));
+
+    /*Cria o novo termo*/
+    Termo* novoTermo = (Termo*) malloc(sizeof(Termo));
+    if (!novoTermo) {
+        perror("Erro ao alocar novoTermo em combinaTermos");
+        free(novoBinario);
+        free(novosMintermos);
+        exit(EXIT_FAILURE);
+    }
+    novoTermo->binario = novoBinario;
+    novoTermo->numBits = t1->numBits;
+    novoTermo->numUns = contaUns(novoBinario); /*Reconta '1's (o traço não é contado)*/
+    novoTermo->mintermosCobertos = novosMintermos;
+    novoTermo->quantMintermosCobertos = novaQuantMintermos;
+    novoTermo->combinado = 0; /*Um termo recém-combinado ainda não foi "combinado" na próxima etapa*/
+
+    return novoTermo;
+}
+
 
 
 /*Funcao para facilitar a impressao de array de inteiros*/
