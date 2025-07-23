@@ -235,6 +235,80 @@ int QuiMc (FILE* tabela){
     for (int i = 0; i < quantiaMintermos1; i++) printf("%s ", binMintermos1[i]);
     printf("\n\n");
     
+    //Estabelece a lista inicial dos termos com base nos mintermos com saida 1
+    Termo** termosAtuais = (Termo**) malloc(quantiaMintermos1 * sizeof(Termo*));
+    for(int i = 0; i < quantiaMintermos1; i++){
+		char bin[entradas + 1];
+		intToBin(mintermos1[i], entradas, bin, sizeof(bin));
+		termosAtuais[i] = criaTermo(bin, entradas, mintermos1[i]);
+	}
+	int quantiaTermosAtuais = quantiaMintermos1;
+	
+	Termo** impPrimos = NULL; //Array para armazenar os implicantes primos
+	int quantiaImpPrimos = 0;
+	
+	while(quantiaTermosAtuais > 0){ //Loop que será executado enquanto existirem combinacoes possiveis
+		Termo** prox = NULL; //Array que armazena os termos que serao criados em cada round
+		int quantiaProx = 0;
+		int combinacoes = 0;
+		
+		//Vai executar em cada par possível de termos atualmente na lista para tentar combiná-los
+		for(int i = 0; i < quantiaTermosAtuais; i++){
+			for(int j = i + 1; j < quantiaTermosAtuais; j++){
+				//Estabelece que só é possível combinar termos se o número de 1s diferir apenas por 1 bit
+				if(termosAtuais[j]->numUns == termosAtuais[i]->numUns + 1){
+					int posDiferente; //Armazena a posicao do bit diferente
+					//Checa se a diferença é apenas de 1 bit
+					if(diferemPorUmBit(termosAtuais[i], termosAtuais[j], &posDiferente)){
+						//Caso sim, cria o novo termo combinado
+						Termo* novoTermo = combinaTermos(termosAtuais[i], termosAtuais[j], posDiferente);
+						//Os termos pais se tornam combinados e impossibilitados de se tornarem primos
+						termosAtuais[i]->combinado = 1;
+						termosAtuais[j]->combinado = 1;
+						combinacoes++;
+						
+						//Segmento que evita que termos duplicados se tornem parte da proxima iteracao da lista
+						int duplo = 0;
+						for(int k = 0; k < quantiaProx; k++){
+							if(strcmp(prox[j]->binario, novoTermo->binario) == 0){
+								duplo = 1;
+								liberaTermo(novoTermo);
+								break;
+							}
+						}
+						if(!duplo){ //Caso nao seja duplicado, vira parte da proxima iteraao
+							quantiaProx++;
+							prox = (Termo**) realloc(prox, quantiaProx * sizeof(Termo*));
+							prox[quantiaProx - 1] = novoTermo;
+						}
+					}
+				}
+			}
+		}
+		//Ultima checagem apos todas as combinacoes serem feitas
+		for (int i = 0; i < quantiaTermosAtuais; i++){
+			if(termosAtuais[i]->combinado == 0){ //Se o termo nao foi combinado, ele é um implicante primo e parte da lista final
+				impPrimos = (Termo**) realloc(impPrimos, quantiaImpPrimos * sizeof(Termo*));
+				impPrimos[quantiaImpPrimos - 1] = termosAtuais[i];
+			} else{
+				liberaTermo(termosAtuais[i]); //Caso ele tenha sido combinado, sua memória é liberada
+			}
+		}
+		free(termosAtuais); //Libera o ponteiro da iteracao atual
+		
+		//Comeca a proxima iteracao, com a lista "prox" se tornando a atual
+		termosAtuais = prox;
+		quantiaTermosAtuais = quantiaProx;
+	}
+	
+	printf("--- Implicantes Primos Determinados ---\n");
+	for(int i = 0; i < quantiaImpPrimos; i++){
+		printf("Termo: %s Cobre: ", impPrimos[i]->binario);
+		imprimeArrayInt(impPrimos[i]->mintermosCobertos, impPrimos[i]->quantMintermosCobertos);
+		printf("\n");
+	}
+	printf("\n");
+    
     fclose(tabela);
     return 0;
 }
