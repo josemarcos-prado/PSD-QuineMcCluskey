@@ -479,7 +479,7 @@ int QuiMc (FILE* tabela){
 						//Segmento que evita que termos duplicados se tornem parte da proxima iteracao da lista
 						int duplo = 0;
 						for(int k = 0; k < quantiaProx; k++){
-							if(strcmp(prox[j]->binario, novoTermo->binario) == 0){
+							if(strcmp(prox[k]->binario, novoTermo->binario) == 0){
 								duplo = 1;
 								liberaTermo(novoTermo);
 								break;
@@ -497,8 +497,9 @@ int QuiMc (FILE* tabela){
 		//Ultima checagem apos todas as combinacoes serem feitas
 		for (int i = 0; i < quantiaTermosAtuais; i++){
 			if(termosAtuais[i]->combinado == 0){ //Se o termo nao foi combinado, ele é um implicante primo e parte da lista final
-				impPrimos = (Termo**) realloc(impPrimos, quantiaImpPrimos * sizeof(Termo*));
-				impPrimos[quantiaImpPrimos - 1] = termosAtuais[i];
+                quantiaImpPrimos++; // Incremente a contagem
+				impPrimos = (Termo**) realloc(impPrimos, quantiaImpPrimos * sizeof(Termo*)); // Realoque memória para o NOVO tamanho
+				impPrimos[quantiaImpPrimos - 1] = termosAtuais[i];// Adicione o termo na última posição
 			} else{
 				liberaTermo(termosAtuais[i]); //Caso ele tenha sido combinado, sua memória é liberada
 			}
