@@ -126,6 +126,215 @@ Termo* combinaTermos(Termo* t1, Termo* t2, int posDiferente) {
 
 
 
+// Função auxiliar para traduzir o termo binário para expressão algébrica
+void imprimeTermoAlgebraico(char* binario, int numEntradas) {
+    int termoVazio = 1;
+    for (int i = 0; i < numEntradas; i++) {
+        if (binario[i] != '-') {
+            termoVazio = 0;
+            // Assumindo variáveis
+            printf("%c", 'A' + i); 
+            if (binario[i] == '0') {
+                printf("'"); // ' para indicar negação
+            }
+        }
+    }
+    if (termoVazio) {
+        printf("1"); // Se o termo for todo de '-', representa a constante 1
+    }
+}
+// Função recursiva para encontrar a cobertura mínima dos mintermos restantes
+// Usa a técnica de backtracking
+void resolveCoberturaRecursiva(
+    int quantiaMintermos, int* mintermos,
+    int quantiaImpPrimos, Termo** impPrimos,
+    int** tabela,
+    int* mintermosAindaNaoCobertos, int quantiaNaoCobertos,
+    int* solucaoAtual, int tamanhoSolucaoAtual,
+    int** melhorSolucao, int* tamanhoMelhorSolucao
+) {
+    // Caso base: todos os mintermos foram cobertos
+    if (quantiaNaoCobertos == 0) {
+        // Se a solução atual for menor que a melhor encontrada até agora
+        if (tamanhoSolucaoAtual < *tamanhoMelhorSolucao) {
+            *tamanhoMelhorSolucao = tamanhoSolucaoAtual;
+            free(*melhorSolucao);
+            *melhorSolucao = (int*)malloc(tamanhoSolucaoAtual * sizeof(int));
+            memcpy(*melhorSolucao, solucaoAtual, tamanhoSolucaoAtual * sizeof(int));
+        }
+        return;
+    }
+    // Se a solução atual já é pior que a melhor, não vapo
+    if (tamanhoSolucaoAtual >= *tamanhoMelhorSolucao -1) {
+        return;
+    }
+    // Pega o primeiro mintermo que ainda precisa ser coberto
+    int primeiroMintermoNaoCoberto = mintermosAindaNaoCobertos[0];
+    int indicePrimeiroMintermo = -1;
+    for(int i=0; i<quantiaMintermos; i++){
+        if(mintermos[i] == primeiroMintermoNaoCoberto){
+            indicePrimeiroMintermo = i;
+            break;
+        }
+    }
+    // Itera sobre todos os implicantes que cobrem este mintermo
+    for (int i = 0; i < quantiaImpPrimos; i++) {
+        if (tabela[i][indicePrimeiroMintermo] == 1) { // Se o implicante 'i' cobre o mintermo
+            // Tenta usar este implicante 'i'
+            solucaoAtual[tamanhoSolucaoAtual] = i;
+            // Calcula os novos mintermos não cobertos
+            int* proxMintermosNaoCobertos = (int*)malloc(quantiaNaoCobertos * sizeof(int));
+            int proxQuantiaNaoCobertos = 0;
+            for(int k=0; k < quantiaNaoCobertos; k++){
+                int mintermoAtual = mintermosAindaNaoCobertos[k];
+                int cobertoPeloImplicanteEscolhido = 0;
+                // Verifica se o mintermo está na lista de cobertura do implicante 'i'
+                for(int m=0; m < impPrimos[i]->quantMintermosCobertos; m++){
+                    if(impPrimos[i]->mintermosCobertos[m] == mintermoAtual){
+                        cobertoPeloImplicanteEscolhido = 1;
+                        break;
+                    }
+                }
+                if(!cobertoPeloImplicanteEscolhido){
+                     proxMintermosNaoCobertos[proxQuantiaNaoCobertos++] = mintermoAtual;
+                }
+            }
+            
+            // Chamada recursiva
+            resolveCoberturaRecursiva(quantiaMintermos, mintermos, quantiaImpPrimos, impPrimos, tabela,
+                                      proxMintermosNaoCobertos, proxQuantiaNaoCobertos,
+                                      solucaoAtual, tamanhoSolucaoAtual + 1,
+                                      melhorSolucao, tamanhoMelhorSolucao);
+            
+            free(proxMintermosNaoCobertos);
+        }
+    }
+}
+// Função principal dessa parte
+void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quantiaMintermos1, int* mintermos1, int numEntradas) {
+    if (quantiaImpPrimos == 0) {
+        printf("Nenhuma solução encontrada.\n");
+        return;
+    }
+
+    // Criar a tabela de implicantes primos
+    int** tabela = (int**)malloc(quantiaImpPrimos * sizeof(int*));
+    for (int i = 0; i < quantiaImpPrimos; i++) {
+        tabela[i] = (int*)calloc(quantiaMintermos1, sizeof(int)); // Inicia com zeros
+    }
+
+    // Preenche a tabela com '1's onde houver cobertura
+    for (int i = 0; i < quantiaImpPrimos; i++) { // Para cada implicante (linha)
+        for (int j = 0; j < impPrimos[i]->quantMintermosCobertos; j++) { // Para cada mintermo que ele cobre
+            int mintermoCoberto = impPrimos[i]->mintermosCobertos[j];
+            for (int k = 0; k < quantiaMintermos1; k++) { // Encontra a coluna correspondente
+                if (mintermos1[k] == mintermoCoberto) {
+                    tabela[i][k] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Encontrar implicantes essenciais
+    int* solucaoFinal = (int*)malloc(quantiaImpPrimos * sizeof(int));
+    int tamanhoSolucao = 0;
+    int* mintermosCobertos = (int*)calloc(quantiaMintermos1, sizeof(int)); // 0 = não coberto, 1 = coberto
+
+    int novosEssenciaisEncontrados;
+    do {
+        novosEssenciaisEncontrados = 0;
+        for (int j = 0; j < quantiaMintermos1; j++) { // Para cada coluna (mintermo)
+            if (mintermosCobertos[j] == 1) continue; // Já coberto
+
+            int count = 0;
+            int ultimoImplicante = -1;
+            for (int i = 0; i < quantiaImpPrimos; i++) { // Conta quantos '1's na coluna
+                if (tabela[i][j] == 1) {
+                    count++;
+                    ultimoImplicante = i;
+                }
+            }
+
+            if (count == 1) { // Achou um implicante essencial!
+                novosEssenciaisEncontrados = 1;
+                
+                // Adiciona à solução se ainda não estiver lá
+                int jaNaSolucao = 0;
+                for(int k=0; k<tamanhoSolucao; k++){
+                    if(solucaoFinal[k] == ultimoImplicante) jaNaSolucao = 1;
+                }
+                if(!jaNaSolucao){
+                    solucaoFinal[tamanhoSolucao++] = ultimoImplicante;
+                }
+
+                // Marca todos os mintermos cobertos por este implicante essencial
+                for (int k = 0; k < quantiaMintermos1; k++) {
+                    if (tabela[ultimoImplicante][k] == 1) {
+                        mintermosCobertos[k] = 1;
+                    }
+                }
+            }
+        }
+    } while (novosEssenciaisEncontrados);
+
+    printf("\n--- Implicantes Primos Essenciais ---\n");
+    for(int i=0; i<tamanhoSolucao; i++){
+        printf("Termo: %s\n", impPrimos[solucaoFinal[i]]->binario);
+    }
+    
+    // Cobrir o restante, se necessário
+    int* mintermosNaoCobertos = (int*)malloc(quantiaMintermos1 * sizeof(int));
+    int quantiaNaoCobertos = 0;
+    for(int i=0; i<quantiaMintermos1; i++){
+        if(mintermosCobertos[i] == 0){
+            mintermosNaoCobertos[quantiaNaoCobertos++] = mintermos1[i];
+        }
+    }
+
+    if (quantiaNaoCobertos > 0) {
+        printf("\n...Buscando cobertura para %d mintermos restantes...\n", quantiaNaoCobertos);
+        
+        int* melhorSolucaoRecursiva = NULL;
+        int tamanhoMelhorSolucao = quantiaImpPrimos + 1; // Inicia com um valor "infinito"
+        int* solucaoRecursivaAtual = (int*) malloc(quantiaImpPrimos * sizeof(int));
+
+        resolveCoberturaRecursiva(quantiaMintermos1, mintermos1, quantiaImpPrimos, impPrimos, tabela,
+                                  mintermosNaoCobertos, quantiaNaoCobertos,
+                                  solucaoRecursivaAtual, 0,
+                                  &melhorSolucaoRecursiva, &tamanhoMelhorSolucao);
+        
+        // Adiciona a melhor solução encontrada recursivamente à solução final
+        for(int i=0; i < tamanhoMelhorSolucao; i++){
+            solucaoFinal[tamanhoSolucao++] = melhorSolucaoRecursiva[i];
+        }
+
+        free(melhorSolucaoRecursiva);
+        free(solucaoRecursivaAtual);
+    }
+    
+    // Imprimir a expressão final
+    printf("\n--- Expressao Logica Simplificada ---\nF = ");
+    for (int i = 0; i < tamanhoSolucao; i++) {
+        imprimeTermoAlgebraico(impPrimos[solucaoFinal[i]]->binario, numEntradas);
+        if (i < tamanhoSolucao - 1) {
+            printf(" + ");
+        }
+    }
+    printf("\n\n");
+
+    // Libera memória
+    free(mintermosNaoCobertos);
+    free(solucaoFinal);
+    free(mintermosCobertos);
+    for (int i = 0; i < quantiaImpPrimos; i++) {
+        free(tabela[i]);
+    }
+    free(tabela);
+}
+
+
+
 /*Funcao para facilitar a impressao de array de inteiros*/
 void imprimeArrayInt(int* array, int tamanho){
     printf("[");
@@ -309,6 +518,15 @@ int QuiMc (FILE* tabela){
 	}
 	printf("\n");
     
+    // Chama a o algoritmo para encontrar a cobertura mínima
+    selecionaCoberturaMinima(quantiaImpPrimos, impPrimos, quantiaMintermos1, mintermos1, entradas);
+    
+    // Libera a memória dos implicantes primos
+    for(int i = 0; i < quantiaImpPrimos; i++){
+        liberaTermo(impPrimos[i]);
+    }
+    free(impPrimos);
+
     fclose(tabela);
     return 0;
 }
