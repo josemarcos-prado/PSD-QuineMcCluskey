@@ -147,7 +147,7 @@ void imprimeTermoAlgebraico(char* binario, int numEntradas) {
 // Usa a técnica de backtracking
 void resolveCoberturaRecursiva(
     int quantiaMintermos, int* mintermos,
-    int quantiaImpPrimos, Termo** impPrimos,
+    int quantiaImpPrimos, Termo** implicantesPrimos,
     int** tabela,
     int* mintermosAindaNaoCobertos, int quantiaNaoCobertos,
     int* solucaoAtual, int tamanhoSolucaoAtual,
@@ -189,8 +189,8 @@ void resolveCoberturaRecursiva(
                 int mintermoAtual = mintermosAindaNaoCobertos[k];
                 int cobertoPeloImplicanteEscolhido = 0;
                 // Verifica se o mintermo está na lista de cobertura do implicante 'i'
-                for(int m=0; m < impPrimos[i]->quantMintermosCobertos; m++){
-                    if(impPrimos[i]->mintermosCobertos[m] == mintermoAtual){
+                for(int m=0; m < implicantesPrimos[i]->quantMintermosCobertos; m++){
+                    if(implicantesPrimos[i]->mintermosCobertos[m] == mintermoAtual){
                         cobertoPeloImplicanteEscolhido = 1;
                         break;
                     }
@@ -201,7 +201,7 @@ void resolveCoberturaRecursiva(
             }
             
             // Chamada recursiva
-            resolveCoberturaRecursiva(quantiaMintermos, mintermos, quantiaImpPrimos, impPrimos, tabela,
+            resolveCoberturaRecursiva(quantiaMintermos, mintermos, quantiaImpPrimos, implicantesPrimos, tabela,
                                       proxMintermosNaoCobertos, proxQuantiaNaoCobertos,
                                       solucaoAtual, tamanhoSolucaoAtual + 1,
                                       melhorSolucao, tamanhoMelhorSolucao);
@@ -211,7 +211,7 @@ void resolveCoberturaRecursiva(
     }
 }
 // Função principal dessa parte
-void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quantiaMintermos1, int* mintermos1, int numEntradas) {
+void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** implicantesPrimos, int quantiaMintermos1, int* mintermos1, int numEntradas) {
     if (quantiaImpPrimos == 0) {
         printf("Nenhuma solução encontrada.\n");
         return;
@@ -225,8 +225,8 @@ void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quant
 
     // Preenche a tabela com '1's onde houver cobertura
     for (int i = 0; i < quantiaImpPrimos; i++) { // Para cada implicante (linha)
-        for (int j = 0; j < impPrimos[i]->quantMintermosCobertos; j++) { // Para cada mintermo que ele cobre
-            int mintermoCoberto = impPrimos[i]->mintermosCobertos[j];
+        for (int j = 0; j < implicantesPrimos[i]->quantMintermosCobertos; j++) { // Para cada mintermo que ele cobre
+            int mintermoCoberto = implicantesPrimos[i]->mintermosCobertos[j];
             for (int k = 0; k < quantiaMintermos1; k++) { // Encontra a coluna correspondente
                 if (mintermos1[k] == mintermoCoberto) {
                     tabela[i][k] = 1;
@@ -280,7 +280,7 @@ void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quant
 
     printf("\n--- Implicantes Primos Essenciais ---\n");
     for(int i=0; i<tamanhoSolucao; i++){
-        printf("Termo: %s\n", impPrimos[solucaoFinal[i]]->binario);
+        printf("Termo: %s\n", implicantesPrimos[solucaoFinal[i]]->binario);
     }
     
     // Cobrir o restante, se necessário
@@ -299,7 +299,7 @@ void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quant
         int tamanhoMelhorSolucao = quantiaImpPrimos + 1; // Inicia com um valor "infinito"
         int* solucaoRecursivaAtual = (int*) malloc(quantiaImpPrimos * sizeof(int));
 
-        resolveCoberturaRecursiva(quantiaMintermos1, mintermos1, quantiaImpPrimos, impPrimos, tabela,
+        resolveCoberturaRecursiva(quantiaMintermos1, mintermos1, quantiaImpPrimos, implicantesPrimos, tabela,
                                   mintermosNaoCobertos, quantiaNaoCobertos,
                                   solucaoRecursivaAtual, 0,
                                   &melhorSolucaoRecursiva, &tamanhoMelhorSolucao);
@@ -316,7 +316,7 @@ void selecionaCoberturaMinima(int quantiaImpPrimos, Termo** impPrimos, int quant
     // Imprimir a expressão final
     printf("\n--- Expressao Logica Simplificada ---\nF = ");
     for (int i = 0; i < tamanhoSolucao; i++) {
-        imprimeTermoAlgebraico(impPrimos[solucaoFinal[i]]->binario, numEntradas);
+        imprimeTermoAlgebraico(implicantesPrimos[solucaoFinal[i]]->binario, numEntradas);
         if (i < tamanhoSolucao - 1) {
             printf(" + ");
         }
@@ -359,16 +359,12 @@ int buscaEntradas(FILE* tabela){
 int achaMintermos1(FILE* tabela, int entradas){
     rewind(tabela);
 
-    char linha[entradas+4];
-    if (!linha){
-        printf("\nErro ao tentar percorrer o arquivo\n\n");
-        return -1;
-    }
+    char linha[256];
     int quantidadeDeMinTermos1 = 0;
 
     while(fgets(linha, sizeof(linha), tabela)){
         if (linha[0] == '.') continue;
-        if (linha[strlen(linha) - 2] == '1') quantidadeDeMinTermos1++;
+        if (linha[entradas + 1] == '1') quantidadeDeMinTermos1++;
     };
 
     return quantidadeDeMinTermos1;
@@ -378,13 +374,13 @@ int achaMintermos1(FILE* tabela, int entradas){
 void armazenaMintermos1(FILE* tabela, int entradas, int* mintermos1){
     rewind(tabela);
 
-    char linha[entradas+4];
+    char linha[256];
     int numeroDaLinha = 0;
     int i = 0;
 
     while(fgets(linha, sizeof(linha), tabela)){
         if (linha[0] == '.') continue;
-        if (linha[strlen(linha)-2] == '1') {
+        if (linha[entradas + 1] == '1') {
             mintermos1[i] = numeroDaLinha;
             i++;
         }
@@ -431,9 +427,12 @@ int QuiMc (FILE* tabela){
         printf("\nTabela-verdade dada representa uma contradicao\n\n");
         return 2;
     }
+
+    //Armazena mintermos de saída 1 em um array de inteiros
     int mintermos1[quantiaMintermos1];
     armazenaMintermos1(tabela, entradas, mintermos1);
 
+    //Converte o array de inteiros num array de strings com a representação em binário
     char binMintermos1[quantiaMintermos1][entradas+1];
     for (int i = 0; i < quantiaMintermos1; i++) intToBin(mintermos1[i], entradas, binMintermos1[i], sizeof(binMintermos1[i]));
 
@@ -446,14 +445,12 @@ int QuiMc (FILE* tabela){
     
     //Estabelece a lista inicial dos termos com base nos mintermos com saida 1
     Termo** termosAtuais = (Termo**) malloc(quantiaMintermos1 * sizeof(Termo*));
-    for(int i = 0; i < quantiaMintermos1; i++){
-		char bin[entradas + 1];
-		intToBin(mintermos1[i], entradas, bin, sizeof(bin));
-		termosAtuais[i] = criaTermo(bin, entradas, mintermos1[i]);
-	}
+    for(int i = 0; i < quantiaMintermos1; i++)
+		termosAtuais[i] = criaTermo(binMintermos1[i], entradas, mintermos1[i]);
+    
 	int quantiaTermosAtuais = quantiaMintermos1;
 	
-	Termo** impPrimos = NULL; //Array para armazenar os implicantes primos
+	Termo** implicantesPrimos = NULL; //Array para armazenar os implicantes primos
 	int quantiaImpPrimos = 0;
 	
 	while(quantiaTermosAtuais > 0){ //Loop que será executado enquanto existirem combinacoes possiveis
@@ -465,41 +462,40 @@ int QuiMc (FILE* tabela){
 		for(int i = 0; i < quantiaTermosAtuais; i++){
 			for(int j = i + 1; j < quantiaTermosAtuais; j++){
 				//Estabelece que só é possível combinar termos se o número de 1s diferir apenas por 1 bit
-				if(termosAtuais[j]->numUns == termosAtuais[i]->numUns + 1){
-					int posDiferente; //Armazena a posicao do bit diferente
-					//Checa se a diferença é apenas de 1 bit
-					if(diferemPorUmBit(termosAtuais[i], termosAtuais[j], &posDiferente)){
-						//Caso sim, cria o novo termo combinado
-						Termo* novoTermo = combinaTermos(termosAtuais[i], termosAtuais[j], posDiferente);
-						//Os termos pais se tornam combinados e impossibilitados de se tornarem primos
-						termosAtuais[i]->combinado = 1;
-						termosAtuais[j]->combinado = 1;
-						combinacoes++;
-						
-						//Segmento que evita que termos duplicados se tornem parte da proxima iteracao da lista
-						int duplo = 0;
-						for(int k = 0; k < quantiaProx; k++){
-							if(strcmp(prox[k]->binario, novoTermo->binario) == 0){
-								duplo = 1;
-								liberaTermo(novoTermo);
-								break;
-							}
-						}
-						if(!duplo){ //Caso nao seja duplicado, vira parte da proxima iteraao
-							quantiaProx++;
-							prox = (Termo**) realloc(prox, quantiaProx * sizeof(Termo*));
-							prox[quantiaProx - 1] = novoTermo;
-						}
-					}
-				}
+                int posDiferente; //Armazena a posicao do bit diferente
+                //Checa se a diferença é apenas de 1 bit
+                if(diferemPorUmBit(termosAtuais[i], termosAtuais[j], &posDiferente)){
+                    //Caso sim, cria o novo termo combinado
+                    Termo* novoTermo = combinaTermos(termosAtuais[i], termosAtuais[j], posDiferente);
+                    //Os termos pais se tornam combinados e impossibilitados de se tornarem primos
+                    termosAtuais[i]->combinado = 1;
+                    termosAtuais[j]->combinado = 1;
+                    combinacoes++;
+                    
+                    //Segmento que evita que termos duplicados se tornem parte da proxima iteracao da lista
+                    int duplo = 0;
+                    for(int k = 0; k < quantiaProx; k++){
+                        if(strcmp(prox[k]->binario, novoTermo->binario) == 0){
+                            duplo = 1;
+                            liberaTermo(novoTermo);
+                            break;
+                        }
+                    }
+                    if(!duplo){ //Caso nao seja duplicado, vira parte da proxima iteraao
+                        quantiaProx++;
+                        prox = (Termo**) realloc(prox, quantiaProx * sizeof(Termo*));
+                        prox[quantiaProx - 1] = novoTermo;
+                    }
+                }
 			}
 		}
+
 		//Ultima checagem apos todas as combinacoes serem feitas
 		for (int i = 0; i < quantiaTermosAtuais; i++){
 			if(termosAtuais[i]->combinado == 0){ //Se o termo nao foi combinado, ele é um implicante primo e parte da lista final
                 quantiaImpPrimos++; // Incremente a contagem
-				impPrimos = (Termo**) realloc(impPrimos, quantiaImpPrimos * sizeof(Termo*)); // Realoque memória para o NOVO tamanho
-				impPrimos[quantiaImpPrimos - 1] = termosAtuais[i];// Adicione o termo na última posição
+				implicantesPrimos = (Termo**) realloc(implicantesPrimos, quantiaImpPrimos * sizeof(Termo*)); // Realoque memória para o NOVO tamanho
+				implicantesPrimos[quantiaImpPrimos - 1] = termosAtuais[i];// Adicione o termo na última posição
 			} else{
 				liberaTermo(termosAtuais[i]); //Caso ele tenha sido combinado, sua memória é liberada
 			}
@@ -513,20 +509,20 @@ int QuiMc (FILE* tabela){
 	
 	printf("--- Implicantes Primos Determinados ---\n");
 	for(int i = 0; i < quantiaImpPrimos; i++){
-		printf("Termo: %s Cobre: ", impPrimos[i]->binario);
-		imprimeArrayInt(impPrimos[i]->mintermosCobertos, impPrimos[i]->quantMintermosCobertos);
+		printf("Termo: %s Cobre: ", implicantesPrimos[i]->binario);
+		imprimeArrayInt(implicantesPrimos[i]->mintermosCobertos, implicantesPrimos[i]->quantMintermosCobertos);
 		printf("\n");
 	}
 	printf("\n");
     
     // Chama a o algoritmo para encontrar a cobertura mínima
-    selecionaCoberturaMinima(quantiaImpPrimos, impPrimos, quantiaMintermos1, mintermos1, entradas);
+    selecionaCoberturaMinima(quantiaImpPrimos, implicantesPrimos, quantiaMintermos1, mintermos1, entradas);
     
     // Libera a memória dos implicantes primos
     for(int i = 0; i < quantiaImpPrimos; i++){
-        liberaTermo(impPrimos[i]);
+        liberaTermo(implicantesPrimos[i]);
     }
-    free(impPrimos);
+    free(implicantesPrimos);
 
     fclose(tabela);
     return 0;
